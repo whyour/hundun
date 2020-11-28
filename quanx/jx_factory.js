@@ -107,7 +107,7 @@ function getUserInfo() {
           data: { factoryList = [], productionList = [], user = {} } = {},
           msg,
         } = JSON.parse(data);
-        $.log(`\n${msg}\n${data}`);
+        //$.log(`\n${msg}\n${data}`);
         $.info = {
           ...$.info,
           factoryInfo: factoryList[0],
@@ -140,7 +140,7 @@ function getCommodityDetail() {
           const { ret, data: { commodityList = [] } = {}, msg } = JSON.parse(
             data
           );
-          $.log(`\n${msg}\n${data}`);
+          //$.log(`\n${msg}\n${data}`);
           $.info.commodityInfo = commodityList[0];
         } catch (e) {
           $.logErr(e, resp);
@@ -224,8 +224,17 @@ function getTaskList() {
         const { ret, data: { userTaskStatusList = [] } = {}, msg } = JSON.parse(
           data
         );
-        $.log(`\n获取任务列表 ${msg}`);
+        //$.log(`\n获取任务列表`);
         $.allTask = userTaskStatusList.filter(x => x.awardStatus !== 1);
+/**
+*
+        $.log('筛选后的任务列表');
+        for (let i = 0; i < $.allTask.length; i++) {
+          const task = $.allTask[i];
+          $.log(task.taskName);
+        }
+*
+**/
       } catch (e) {
         $.logErr(e, resp);
       } finally {
@@ -238,6 +247,7 @@ function getTaskList() {
 function browserTask() {
   return new Promise(async (resolve) => {
     const times = Math.max(...[...$.allTask].map((x) => x.configTargetTimes));
+    $.log('共计'+$.allTask.length+'个任务待完成。。。。');
     for (let i = 0; i < $.allTask.length; i++) {
       const task = $.allTask[i];
       $.log(`\n开始第${i}个任务：${task.taskName}`);
@@ -267,9 +277,23 @@ function awardTask({ taskId, taskName }) {
   return new Promise((resolve) => {
     $.get(taskListUrl("Award", `taskId=${taskId}`), (err, resp, data) => {
       try {
-        const { msg, ret } = JSON.parse(data);
-        $.log(`\n${taskName}[领奖励]： ${msg}\n${data}`);
-        resolve(ret === 0);
+        //const { msg, ret } = JSON.parse(data);
+        //$.log(`\n${taskName}[领奖励]： ${msg}\n${data}`);
+        //resolve(ret === 0);
+        data = JSON.parse(data);
+            switch (data['data']['awardStatus']) {
+              case 1:
+                ele += Number(data['data']['prizeInfo'].replace('\\n', ''))
+                console.log(`领取${taskName}任务奖励成功，收获：${Number(data['data']['prizeInfo'].replace('\\n', ''))}电力`);
+                break
+              case 1013:
+              case 0:
+                console.log(`领取${taskName}任务奖励失败，任务已领奖`);
+                break
+              default:
+                console.log(`领取${taskName}任务奖励失败，${data['msg']}`)
+                break
+            }
       } catch (e) {
         $.logErr(e, resp);
       } finally {
@@ -288,9 +312,20 @@ function doTask({ taskId, completedTimes, configTargetTimes, taskName }) {
     }
     $.get(taskListUrl("DoTask", `taskId=${taskId}`), (err, resp, data) => {
       try {
-        const { msg, ret } = JSON.parse(data);
-        $.log(`\n${taskName}[做任务]： ${msg}\n${data}`);
-        resolve(ret === 0);
+        if (err) {
+          console.log(`${JSON.stringify(err)}`)
+          console.log(`${$.name} API请求失败，请检查网路重试`)
+        } else {
+          if (data) {
+            // console.log(data)
+            data = JSON.parse(data);
+            if (data.ret === 0) {
+              console.log("做任务完成！")
+            }
+          } else {
+            console.log(`京东服务器返回空数据`)
+          }
+        }
       } catch (e) {
         $.logErr(e, resp);
       } finally {
