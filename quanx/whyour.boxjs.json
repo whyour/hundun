@@ -371,7 +371,14 @@
           "val": false,
           "type": "boolean",
           "desc": "打开时，脚本只需执行一次，会一直循环拾取知道达到上限，关闭时，需要自己设置定时来执行脚本，脚本只拾取一次，默认关闭"
-        }
+        },
+        {
+          "id": "jx_autoUpgrade",
+          "name": "金牌厂长自动升级",
+          "val": false,
+          "type": "boolean",
+          "desc": "打开时，会一直升级到钞票不够20000，默认关闭"
+        },
       ],
       "author": "@whyour",
       "repo": "https://github.com/whyour/hundun/blob/master/quanx/jx_factory_component.js",

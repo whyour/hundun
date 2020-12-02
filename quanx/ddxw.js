@@ -3,7 +3,7 @@
  * @Github: https://github.com/whyour
  * @Date: 2020-11-20 10:42:06
  * @LastEditors: whyour
- * @LastEditTime: 2020-11-30 13:11:09
+ * @LastEditTime: 2020-12-02 14:41:28
 
   hostname = lkyl.dianpusoft.cn
 
@@ -60,9 +60,10 @@ $.drawCenterInfo = {};
       console.log(`\n开始【京东账号${i + 1}】${userName}`);
       const isOk = await checkToken($.tokens[i]);
       if (!isOk) {
-        await getToken($.userNames[i], i, cookie);
+        $.tokens[i] = await getToken($.userNames[i], i, cookie);
       }
       const startHomeInfo = await getHomeInfo($.tokens[i]);
+      if (!startHomeInfo) return;
       await getDrawCenter($.tokens[i]);
       await drawTask($.tokens[i]);
       await getAllTask($.tokens[i]);
@@ -161,6 +162,7 @@ function checkToken(token) {
   return new Promise((resolve) => {
     if (!token) {
       resolve(false);
+      return;
     }
     $.get(
       taskUrl("ssjj-wo-home-info/queryByUserId/2", {}, token),
@@ -218,6 +220,10 @@ function getHomeInfo(token) {
       (err, resp, data) => {
         try {
           const { body } = JSON.parse(data);
+          if (!body || !body.woB) {
+            $.msg($.name, '请先开通东东小窝！')
+            resolve(false);
+          }
           resolve(body);
         } catch (e) {
           $.logErr(e, resp);

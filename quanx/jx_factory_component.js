@@ -3,29 +3,38 @@
  * @Github: https://github.com/whyour
  * @Date: 2020-11-29 13:14:19
  * @LastEditors: whyour
- * @LastEditTime: 2020-11-30 23:54:36
+ * @LastEditTime: 2020-12-02 21:00:02
+ * 本脚本包含京喜耗时任务，默认自动执行，一天执行几次即可，防止漏网之鱼，可以在box中关闭，然后自己设置定时任务，目前包括
+ * 拾取好友与自己零件
+ * 厂长翻倍任务
+ * 点击厂长任务
+ * 拷贝定时任务删除 *\/4 中的 \
   quanx:
   [task_local]
-  0 5 * * * https://raw.githubusercontent.com/whyour/hundun/master/quanx/jx_factory_component.js, tag=京喜工厂拾取零件, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jdgc.png, enabled=true
+  0 *\/4 * * * https://raw.githubusercontent.com/whyour/hundun/master/quanx/jx_factory_component.js, tag=京喜工厂plus, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jdgc.png, enabled=true
 
   Loon:
   [Script]
-  cron "0 5 * * *" script-path=https://raw.githubusercontent.com/whyour/hundun/master/quanx/jx_factory_component.js,tag=京喜工厂拾取零件
+  cron "0 *\/4 * * *" script-path=https://raw.githubusercontent.com/whyour/hundun/master/quanx/jx_factory_component.js,tag=京喜工厂plus
 
   Surge:
-  京喜工厂拾取零件 = type=cron,cronexp="1 * * * * *",wake-system=1,timeout=20,script-path=https://raw.githubusercontent.com/whyour/hundun/master/quanx/jx_factory_component.js
+  京喜工厂plus = type=cron,cronexp="0 *\/4 * * *",wake-system=1,timeout=20,script-path=https://raw.githubusercontent.com/whyour/hundun/master/quanx/jx_factory_component.js
 *
 **/
 
-const $ = new Env('京喜工厂拾取零件');
+const $ = new Env('京喜工厂plus');
 const JD_API_HOST = 'https://wq.jd.com/';
 const jdCookieNode = $.isNode() ? require('./jdCookie.js') : '';
-$.authExecute = $.getdata('jx_authExecute') ? $.getdata('jx_authExecute') === 'true' : false;
+$.authExecute = $.getdata('jx_authExecute') ? $.getdata('jx_authExecute') === 'true' : true;
 $.showLog = $.getdata('jx_showLog') ? $.getdata('jx_showLog') === 'true' : false;
+$.autoUpgrade = $.getdata('jx_autoUpgrade') ? $.getdata('jx_autoUpgrade') === 'true' : false;
 $.result = [];
 $.cookieArr = [];
 $.currentCookie = '';
 $.info = {};
+$.count = 0;
+$.multiple = 0;
+$.time = 0;
 
 !(async () => {
   if (!getCookies()) return;
@@ -43,10 +52,14 @@ $.info = {};
       await getFriends();
       await $.wait(500);
       const endInfo = await getUserInfo();
+      await clickManage();
+      await getReadyCard();
       $.result.push(
-        `任务前能量：${beginInfo.user.electric} 任务后能量：${endInfo.user.electric}`,
-        `获得能量：${endInfo.user.electric - beginInfo.user.electric}`,
+        `拾取前能量：${beginInfo.user.electric} 拾取后能量：${endInfo.user.electric}`,
+        `获得零件能量：${endInfo.user.electric - beginInfo.user.electric}`,
+        `厂长钞票：${$.count}，银行倍数：${$.multiple}`
       );
+      await upgradeUserLevel();
     }
   }
   $.authExecute && await showMsg();
@@ -195,6 +208,122 @@ function pickUpComponent(placeId, pin, isMe) {
   });
 }
 
+function upgradeUserLevel() {
+  return new Promise(async resolve => {
+    if (!$.autoUpgrade) {
+      resolve();
+      return;
+    }
+    $.get(taskUrl('usermaterial/UpgradeUserLevelDraw'), async (err, resp, data) => {
+      try {
+        const { msg, data: { discount, quota, currentUserLevel, consumeMoneyNum } = {}, ret } = JSON.parse(data);
+        let str = '';
+        if (discount && quota) {
+          str = `，获得满${quota}减${discount}红包`;
+        }
+        if (ret === 0) {
+          $.time++;
+          $.log(`\n投入钞票：${msg}，消耗钞票${consumeMoneyNum}，当前等级 ${currentUserLevel}${str ? str : ''}\n${$.showLog ? data : ''}`);
+          await upgradeUserLevel();
+        } else {
+          $.result.push(
+            `厂长从${currentUserLevel-$.time}级升到${currentUserLevel}`,
+          );
+        }
+      } catch (e) {
+        $.logErr(e, resp);
+      } finally {
+        resolve();
+      }
+    });
+  });
+}
+
+function clickManage() {
+  return new Promise(resolve => {
+    $.get(taskStroyUrl('userinfo/IncreaseUserMoney'), async (err, resp, _data) => {
+      try {
+        const { ret, data: { moneyNum = 0 } = {}, msg } = JSON.parse(_data);
+        $.log(`\n点击厂长：${msg}，获得钞票 ${moneyNum}\n${$.showLog ? _data : ''}`);
+        $.count += moneyNum;
+        if (ret === 0 && $.authExecute) {
+          await $.wait(500);
+          await clickManage();
+        }
+      } catch (e) {
+        $.logErr(e, resp);
+      } finally {
+        resolve();
+      }
+    });
+  });
+}
+
+function getReadyCard() {
+  return new Promise(async resolve => {
+    $.get(taskStroyUrl('userinfo/ReadyCard'), async (err, resp, data) => {
+      try {
+        const { ret, data: { cardInfo = [] } = {}, msg } = JSON.parse(data);
+        $.log(`\n获取翻倍列表 ${msg}，总共${cardInfo.length}个卡片！${cardInfo.length ? '随机选择一个卡片' : ''}`);
+        if (cardInfo.length > 0) {
+          await selectCard(cardInfo);
+        }
+      } catch (e) {
+        $.logErr(e, resp);
+      } finally {
+        resolve();
+      }
+    });
+  });
+}
+
+function selectCard(cardInfo) {
+  return new Promise(async resolve => {
+    const random = Math.floor(Math.random() * 3);
+    const cardList = [...cardInfo].map((x, i) => {
+      return {
+        cardId: x.cardId,
+        cardPosition: i + 1,
+        cardStatus: i === random ? 1 : 0,
+      };
+    });
+    $.get(
+      taskStroyUrl('userinfo/SelectCard', `cardInfo=${encodeURIComponent(JSON.stringify({ cardInfo: cardList }))}`),
+      async (err, resp, data) => {
+        try {
+          const { ret, msg } = JSON.parse(data);
+          $.log(`\n选择翻倍卡片 ${msg}`);
+          await $.wait(10300);
+          await finishCard(cardInfo[random]);
+        } catch (e) {
+          $.logErr(e, resp);
+        } finally {
+          resolve();
+        }
+      },
+    );
+  });
+}
+
+function finishCard({ cardId }) {
+  return new Promise(async resolve => {
+    $.get(taskStroyUrl('userinfo/FinishCard', `cardid=${cardId}`), async (err, resp, data) => {
+      try {
+        const { ret, data: { cardInfo = [], earnRatio } = {}, msg } = JSON.parse(data);
+        $.log(`\n翻倍 ${msg}，获得倍数 ${earnRatio || 0}`);
+        $.multiple += earnRatio;
+        if (ret === 0 && $.authExecute && earnRatio) {
+          await getReadyCard()
+        }
+      } catch (e) {
+        $.logErr(e, resp);
+      } finally {
+        resolve();
+      }
+    });
+  });
+}
+
 function showMsg() {
   return new Promise(resolve => {
     $.msg($.name, '', `\n${$.result.join('\n')}`);
@@ -213,6 +342,24 @@ function taskUrl(function_path, body) {
       'Accept-Encoding': `gzip, deflate, br`,
       Host: `wq.jd.com`,
       'User-Agent': `jdpingou;iPhone;3.15.2;14.2.1;ea00763447803eb0f32045dcba629c248ea53bb3;network/3g;model/iPhone13,2;appBuild/100365;ADID/00000000-0000-0000-0000-000000000000;supportApplePay/1;hasUPPay/0;pushNoticeIsOpen/0;hasOCPay/0;supportBestPay/0;session/4;pap/JA2015_311210;brand/apple;supportJDSHWK/1;Mozilla/5.0 (iPhone; CPU iPhone OS 14_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148`,
+      'Accept-Language': `zh-cn`,
+    },
+  };
+}
+
+function taskStroyUrl(function_path, body) {
+  return {
+    url: `${JD_API_HOST}jxstory/${function_path}?bizcode=jxstory&sceneval=2&g_login_type=1&&_time=${Date.now()}&_=${Date.now()}&${body}`,
+    headers: {
+      Cookie: $.currentCookie,
+      Accept: `*/*`,
+      Connection: `keep-alive`,
+      Referer: `https://st.jingxi.com/pingou/jx_factory_story/index.html`,
+      'Accept-Encoding': `gzip, deflate, br`,
+      Host: `m.jingxi.com`,
+      'User-Agent': `jdpingou;iPhone;3.15.2;14.2.1;ea00763447803eb0f32045dcba629c248ea53bb3;network/wifi;model/iPhone13,2;appBuild/100365;ADID/00000000-0000-0000-0000-000000000000;supportApplePay/1;hasUPPay/0;pushNoticeIsOpen/0;hasOCPay/0;supportBestPay/0;session/${
+        Math.random * 98 + 1
+      };pap/JA2015_311210;brand/apple;supportJDSHWK/1;Mozilla/5.0 (iPhone; CPU iPhone OS 14_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148`,
       'Accept-Language': `zh-cn`,
     },
   };
