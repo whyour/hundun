@@ -234,7 +234,7 @@
     {
       "id": "jx_nc",
       "name": "京喜农场",
-      "keys": ["jxnc_token1", "jxnc_token2"],
+      "keys": ["jxnc_token1", "jxnc_token2", "jxnc_token3", "jxnc_token4", "jxnc_token5", "jxnc_token6", "jxnc_token7", "jxnc_token8"],
       "settings": [
         {
           "id": "nc_showLog",
