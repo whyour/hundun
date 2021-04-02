@@ -327,6 +327,7 @@ function taskUrl(function_path, body) {
       'Accept-Encoding': `gzip, deflate, br`,
       Host: `wq.jd.com`,
       'Accept-Language': `zh-cn`,
+      'User-Agent': 'jdpingou;iPhone;'
     },
   };
 }

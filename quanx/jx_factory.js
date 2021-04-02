@@ -726,7 +726,7 @@ function taskUrl(function_path, body, stk) {
       Referer: `https://st.jingxi.com/pingou/dream_factory/index.html`,
       'Accept-Encoding': `gzip, deflate, br`,
       Host: `m.jingxi.com`,
-      'User-Agent': `jdpingou;iPhone;`,
+      'User-Agent': `jdpingou;iPhone;3.16.0;14.2.1;f803928b71d2fcd51c7eae549f7bc3062d17f63f;network/wifi;model/iPhone13,2;appBuild/100374;ADID/00000000-0000-0000-0000-000000000000;supportApplePay/1;hasUPPay/0;pushNoticeIsOpen/0;hasOCPay/0;supportBestPay/0;session/64;pap/JA2019_3111789;brand/apple;supportJDSHWK/1;Mozilla/5.0 (iPhone; CPU iPhone OS 14_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148`,
       'Accept-Language': `zh-cn`,
     },
   };
@@ -749,7 +749,7 @@ function taskListUrl(function_path, body, stk) {
       'Accept-Encoding': `gzip, deflate, br`,
       Host: `m.jingxi.com`,
       'User-Agent':
-        'jdpingou;iPhone;',
+        'jdpingou;iPhone;3.15.2;14.2;f803928b71d2fcd51c7eae549f7bc3062d17f63f;network/4g;model/iPhone11,8;appBuild/100365;ADID/0E38E9F1-4B4C-40A4-A479-DD15E58A5623;supportApplePay/1;hasUPPay/0;pushNoticeIsOpen/1;hasOCPay/0;supportBestPay/0;session/2;pap/JA2015_311210;brand/apple;supportJDSHWK/1;',
       'Accept-Language': `zh-cn`,
     },
   };
