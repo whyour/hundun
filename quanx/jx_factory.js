@@ -2,8 +2,8 @@
  * @Author: whyour
  * @Github: https://github.com/whyour
  * @Date: 2020-11-29 13:14:19
- * @LastEditors: kenji
- * @LastEditTime: 2021-04-02 10:00:00
+ * @LastEditors: Kenji
+ * @LastEditTime: 2021-04-02 15:00:00
  * 多谢： https://github.com/MoPoQAQ
  *       https://github.com/lxk0301
  *       https://www.orzlee.com/web-development/2021/03/03/lxk0301-jingdong-signin-scriptjingxi-factory-solves-the-problem-of-unable-to-signin.html
@@ -124,11 +124,10 @@ function getCookies() {
       notify.sendNotify($.name, '【提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取 https://bean.m.jd.com/', {
         'open-url': 'https://bean.m.jd.com/',
       }, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
-    } else {
-      $.msg($.name, '【提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取', 'https://bean.m.jd.com/', {
-        'open-url': 'https://bean.m.jd.com/',
-      });
     }
+    $.msg($.name, '【提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取', 'https://bean.m.jd.com/', {
+      'open-url': 'https://bean.m.jd.com/',
+    });
     return false;
   }
   return true;
@@ -145,13 +144,13 @@ function getUserInfo() {
         }
         $.info = {
           ...$.info,
-          factoryInfo: factoryList[0],
-          productionInfo: productionList[0] || {},
+          factoryInfo: factoryList ? factoryList[0] : {},
+          productionInfo: productionList ? productionList[0] : {},
           user,
         };
         resolve({
-          factoryInfo: factoryList[0],
-          productionInfo: productionList[0] || {},
+          factoryInfo: factoryList ? factoryList[0] : {},
+          productionInfo: productionList ? productionList[0] : {},
           user,
         });
       } catch (e) {
@@ -192,9 +191,8 @@ function checkProductProcess() {
     if (needElectric <= investedElectric) {
       if ($.isNode()) {
         notify.sendNotify($.name, `【提示】商品 ${$.info.commodityInfo.name} 已生产完成，请前往京喜工厂兑换并选择新商品！`, {}, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
-      } else {
-        $.msg($.name, `【提示】商品 ${$.info.commodityInfo.name} 已生产完成，请前往京喜工厂兑换并选择新商品！`);
       }
+      $.msg($.name, `【提示】商品 ${$.info.commodityInfo.name} 已生产完成，请前往京喜工厂兑换并选择新商品！`);
       return true;
     }
   }
@@ -695,18 +693,16 @@ function showMsg() {
       $.log(`\n${JSON.stringify(notifyTimes)}`);
       $.log(`\n${JSON.stringify(now)}`);
       if (notifyTimes.some(x => x[0] === now[0] && (!x[1] || x[1] === now[1]))) {
-        if ($.isNode()) {
+        if ($.isNode() && (process.env.JX_FACTORY_PUSHONLYDONE ? process.env.JX_FACTORY_PUSHONLYDONE === 'false' : !!0)) {
           notify.sendNotify($.name, `\n${$.result.join('\n')}`, {}, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
-        } else {
-          $.msg($.name, '', `\n${$.result.join('\n')}`);
         }
-      }
-    } else {
-      if ($.isNode()) {
-        notify.sendNotify($.name, `\n${$.result.join('\n')}`, {}, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
-      } else {
         $.msg($.name, '', `\n${$.result.join('\n')}`);
       }
+    } else {
+      if ($.isNode() && (process.env.JX_FACTORY_PUSHONLYDONE ? process.env.JX_FACTORY_PUSHONLYDONE === 'false' : !!0)) {
+        notify.sendNotify($.name, `\n${$.result.join('\n')}`, {}, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
+      }
+      $.msg($.name, '', `\n${$.result.join('\n')}`);
     }
     resolve();
   });
@@ -727,7 +723,7 @@ function taskUrl(function_path, body, stk) {
       Referer: `https://st.jingxi.com/pingou/dream_factory/index.html`,
       'Accept-Encoding': `gzip, deflate, br`,
       Host: `m.jingxi.com`,
-      'User-Agent': `jdpingou;iPhone;3.16.0;14.2.1;f803928b71d2fcd51c7eae549f7bc3062d17f63f;network/wifi;model/iPhone13,2;appBuild/100374;ADID/00000000-0000-0000-0000-000000000000;supportApplePay/1;hasUPPay/0;pushNoticeIsOpen/0;hasOCPay/0;supportBestPay/0;session/64;pap/JA2019_3111789;brand/apple;supportJDSHWK/1;Mozilla/5.0 (iPhone; CPU iPhone OS 14_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148`,
+      'User-Agent': `jdpingou;iPhone;`,
       'Accept-Language': `zh-cn`,
     },
   };
@@ -750,7 +746,7 @@ function taskListUrl(function_path, body, stk) {
       'Accept-Encoding': `gzip, deflate, br`,
       Host: `m.jingxi.com`,
       'User-Agent':
-        'jdpingou;iPhone;3.15.2;14.2;f803928b71d2fcd51c7eae549f7bc3062d17f63f;network/4g;model/iPhone11,8;appBuild/100365;ADID/0E38E9F1-4B4C-40A4-A479-DD15E58A5623;supportApplePay/1;hasUPPay/0;pushNoticeIsOpen/1;hasOCPay/0;supportBestPay/0;session/2;pap/JA2015_311210;brand/apple;supportJDSHWK/1;',
+        'jdpingou;iPhone;',
       'Accept-Language': `zh-cn`,
     },
   };
@@ -767,6 +763,8 @@ function taskAssistUrl(function_path, body) {
       'Accept-Encoding': `gzip, deflate, br`,
       Host: `m.jingxi.com`,
       'Accept-Language': `zh-cn`,
+      'User-Agent':
+        'jdpingou;iPhone;',
     },
   };
 }
@@ -787,7 +785,8 @@ function taskTuanUrl(function_path, body, stk) {
       'Accept-Encoding': `gzip, deflate, br`,
       Host: `m.jingxi.com`,
       'Accept-Language': `zh-cn`,
-      'User-Agent': 'jdpingou;',
+      'User-Agent':
+        'jdpingou;iPhone;',
     },
   };
 }
