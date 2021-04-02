@@ -2,9 +2,11 @@
  * @Author: whyour
  * @Github: https://github.com/whyour
  * @Date: 2020-11-29 13:14:19
- * @LastEditors: whyour
- * @LastEditTime: 2021-03-31 14:41:56
- * 多谢： https://github.com/MoPoQAQ, https://github.com/lxk0301, https://www.orzlee.com/web-development/2021/03/03/lxk0301-jingdong-signin-scriptjingxi-factory-solves-the-problem-of-unable-to-signin.html
+ * @LastEditors: kenji
+ * @LastEditTime: 2021-04-02 10:00:00
+ * 多谢： https://github.com/MoPoQAQ
+ *       https://github.com/lxk0301
+ *       https://www.orzlee.com/web-development/2021/03/03/lxk0301-jingdong-signin-scriptjingxi-factory-solves-the-problem-of-unable-to-signin.html
  * 添加随机助力
  * 自动开团助力
  * box设置不自动充能
@@ -26,6 +28,7 @@
 const $ = new Env('京喜工厂');
 const JD_API_HOST = 'https://m.jingxi.com/';
 const jdCookieNode = $.isNode() ? require('./jdCookie.js') : '';
+const notify = $.isNode() ? require('./sendNotify') : '';
 $.CryptoJS = $.isNode() ? require('crypto-js') : CryptoJS;
 $.autoCharge = $.getdata('gc_autoCharge') ? $.getdata('gc_autoCharge') === 'true' : true;
 $.showLog = $.getdata('gc_showLog') ? $.getdata('gc_showLog') === 'true' : true;
@@ -58,7 +61,7 @@ $.appId = 10001;
       }
       await $.wait(500);
       await getCommodityDetail();
-      if (checkProductProcess()) return;
+      if (checkProductProcess()) continue;
       await $.wait(500);
       await getCurrentElectricity();
       await $.wait(500);
@@ -84,12 +87,14 @@ $.appId = 10001;
           ).toFixed(2)}万) 生产进度${(
             (endInfo.productionInfo.investedElectric / endInfo.productionInfo.needElectric) *
             100
-          ).toFixed(2)}%`,
+          ).toFixed(2)}% 最快还需${(
+            (endInfo.productionInfo.needElectric-beginInfo.productionInfo.investedElectric) / 86400 / 2
+          ).toFixed(2)}天`,
           `【账户剩余】：${endInfo.user.electric}`,
         );
       await $.wait(500);
       await investElectric();
-      if (checkProductProcess()) return;
+      if (checkProductProcess()) continue;
       await $.wait(500);
       await submitInviteId(userName);
       await $.wait(500);
@@ -115,9 +120,15 @@ function getCookies() {
     $.cookieArr = [$.getdata("CookieJD") || "", $.getdata("CookieJD2") || "", ...CookiesJd].filter(x=>!!x);
   }
   if (!$.cookieArr[0]) {
-    $.msg($.name, '【提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取', 'https://bean.m.jd.com/', {
-      'open-url': 'https://bean.m.jd.com/',
-    });
+    if ($.isNode()) {
+      notify.sendNotify($.name, '【提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取 https://bean.m.jd.com/', {
+        'open-url': 'https://bean.m.jd.com/',
+      }, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
+    } else {
+      $.msg($.name, '【提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取', 'https://bean.m.jd.com/', {
+        'open-url': 'https://bean.m.jd.com/',
+      });
+    }
     return false;
   }
   return true;
@@ -179,7 +190,11 @@ function checkProductProcess() {
   if ($.info.productionInfo) {
     const { needElectric, investedElectric } = $.info.productionInfo;
     if (needElectric <= investedElectric) {
-      $.msg($.name, `【提示】商品 ${$.info.commodityInfo.name} 已生产完成，请前往京喜工厂兑换并选择新商品！`);
+      if ($.isNode()) {
+        notify.sendNotify($.name, `【提示】商品 ${$.info.commodityInfo.name} 已生产完成，请前往京喜工厂兑换并选择新商品！`, {}, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
+      } else {
+        $.msg($.name, `【提示】商品 ${$.info.commodityInfo.name} 已生产完成，请前往京喜工厂兑换并选择新商品！`);
+      }
       return true;
     }
   }
@@ -523,7 +538,7 @@ function createAssistUser() {
 
 function getTuanId() {
   return new Promise(async resolve => {
-    $.get(taskUrl('tuan/QueryActiveConfig', `activeId=i9ideMF_BUOdVtmbe1pSeA%3D%3D`, `_time,activeId,tuanId`), async (err, resp, data) => {
+    $.get(taskUrl('tuan/QueryActiveConfig', `activeId=0_pzMedR7KhclCkMIgkTkg%3D%3D`, `_time,activeId,tuanId`), async (err, resp, data) => {
       try {
         const { msg, data: { userTuanInfo } = {} } = JSON.parse(data);
         $.log(`\n获取团id：${msg}\n${$.showLog ? data : ''}`);
@@ -549,7 +564,7 @@ function getTuanId() {
 
 function getTuanInfo(body) {
   return new Promise(async resolve => {
-    $.get(taskUrl('tuan/QueryTuan', `activeId=i9ideMF_BUOdVtmbe1pSeA%3D%3D&${body}`, `_time,activeId,tuanId`), async (err, resp, data) => {
+    $.get(taskUrl('tuan/QueryTuan', `activeId=0_pzMedR7KhclCkMIgkTkg%3D%3D&${body}`, `_time,activeId,tuanId`), async (err, resp, data) => {
       try {
         const { msg, data: { tuanInfo = [] } = {} } = JSON.parse(data);
         $.log(`\n获取开团信息：${msg}\n${$.showLog ? data : ''}`);
@@ -596,7 +611,7 @@ function submitTuanId(userName) {
 function createTuan() {
   return new Promise(async resolve => {
     $.get(
-      taskTuanUrl('tuan/CreateTuan', `activeId=i9ideMF_BUOdVtmbe1pSeA%3D%3D&isOpenApp=1`, '_time,activeId,isOpenApp'),
+      taskTuanUrl('tuan/CreateTuan', `activeId=0_pzMedR7KhclCkMIgkTkg%3D%3D&isOpenApp=1`, '_time,activeId,isOpenApp'),
       async (err, resp, _data) => {
         try {
           const { msg, data = {} } = JSON.parse(_data);
@@ -620,7 +635,7 @@ function joinTuan() {
         const { data = {} } = JSON.parse(_data);
         $.log(`\n${data.value}\n${$.showLog ? _data : ''}`);
         $.get(
-          taskTuanUrl('tuan/JoinTuan', `activeId=i9ideMF_BUOdVtmbe1pSeA%3D%3D&tuanId=${data.value}`, '_time,activeId,tuanId'),
+          taskTuanUrl('tuan/JoinTuan', `activeId=0_pzMedR7KhclCkMIgkTkg%3D%3D&tuanId=${data.value}`, '_time,activeId,tuanId'),
           async (err, resp, data) => {
             try {
               const { msg } = JSON.parse(data);
@@ -680,10 +695,18 @@ function showMsg() {
       $.log(`\n${JSON.stringify(notifyTimes)}`);
       $.log(`\n${JSON.stringify(now)}`);
       if (notifyTimes.some(x => x[0] === now[0] && (!x[1] || x[1] === now[1]))) {
-        $.msg($.name, '', `\n${$.result.join('\n')}`);
+        if ($.isNode()) {
+          notify.sendNotify($.name, `\n${$.result.join('\n')}`, {}, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
+        } else {
+          $.msg($.name, '', `\n${$.result.join('\n')}`);
+        }
       }
     } else {
-      $.msg($.name, '', `\n${$.result.join('\n')}`);
+      if ($.isNode()) {
+        notify.sendNotify($.name, `\n${$.result.join('\n')}`, {}, '\n\n本脚本免费使用 By：https://github.com/whyour/qinglong')
+      } else {
+        $.msg($.name, '', `\n${$.result.join('\n')}`);
+      }
     }
     resolve();
   });
